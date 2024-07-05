@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stangen Gewicht & Bedarfsrechner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        h1 {
+            text-align: center;
+            color: #ff6600;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #ff6600;
+        }
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .buttons button {
+            flex: 1;
+            margin: 5px;
+            padding: 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            color: white;
+        }
+        .calculate-button {
+            background-color: #4CAF50;
+            flex: 2;
+            font-size: 1.2em;
+        }
+        .calculate-button:hover {
+            background-color: #45a049;
+        }
+        .copy-button {
+            background-color: #2196F3;
+        }
+        .copy-button:hover {
+            background-color: #0b7dda;
+        }
+        .reset-button {
+            background-color: #f44336;
+        }
+        .reset-button:hover {
+            background-color: #da190b;
+        }
+        .history-button {
+            background-color: #ff9800;
+        }
+        .history-button:hover {
+            background-color: #e68a00;
+        }
+        .share-button {
+            background-color: #673AB7;
+        }
+        .share-button:hover {
+            background-color: #5E35B1;
+        }
+        .add-material-button {
+            background-color: #009688;
+        }
+        .add-material-button:hover {
+            background-color: #00796B;
+        }
+        .result {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .result p {
+            margin: 5px 0;
+        }
+        .result .big {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .result .medium {
+            font-size: 1.5em;
+        }
+        .result .small {
+            font-size: 0.9em;
+        }
+        .history {
+            display: none;
+            margin-top: 20px;
+        }
+        .history-item {
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+        }
+        .history-item input {
+            margin-right: 10px;
+        }
+        .history-item p {
+            margin: 5px 0;
+        }
+        .animation {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 20px auto;
+            background-image: url('https://via.placeholder.com/100'); /* Placeholder for an actual round bar image */
+            background-size: contain;
+            background-repeat: no-repeat;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+        }
+        .modal-header, .modal-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h2, .modal-footer button {
+            margin: 0;
+        }
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="animation"></div>
+        <h1>Stangen Gewicht & Bedarfsrechner</h1>
+        <div class="input-group">
+            <label for="length">Stangenlänge (mm)</label>
+            <input type="number" id="length" step="0.1" value="3000" onkeydown="nextField(event, 'usableLength')">
+        </div>
+        <div class="input-group">
+            <label for="usableLength">Nutzbare Stangenlänge (mm)</label>
+            <input type="number" id="usableLength" step="0.1" value="2800" onkeydown="nextField(event, 'dimension')">
+        </div>
+        <div class="input-group">
+            <label for="dimension">Durchmesser/Seitenlänge (mm)</label>
+            <input type="number" id="dimension" step="0.1" onkeydown="nextField(event, 'shape')">
+        </div>
+        <div class="input-group">
+            <label for="shape">Form</label>
+            <select id="shape" onkeydown="nextField(event, 'material')">
+                <option value="round">Rund</option>
+                <option value="square">Quadratisch</option>
+                <option value="hexagon">Hexagon</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="material">Material</label>
+            <select id="material" onchange="updateSubMaterial()" onkeydown="nextField(event, 'subMaterial')">
+                <option value="iron">Eisen</option>
+                <option value="brass">Messing</option>
+                <option value="aluminium">Aluminium</option>
+                <option value="stainless_steel">Edelstahl</option>
+                <option value="steel">Stahl</option>
+                <option value="plastic">Kunststoff</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="subMaterial">Untermaterial</label>
+            <select id="subMaterial" onkeydown="nextField(event, 'density')">
+                <!-- Sub-material options will be populated dynamically -->
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="density">Dichte (kg/m³)</label>
+            <input type="number" id="density" step="0.1" onkeydown="nextField(event, 'pieceQuantity')">
+        </div>
+        <div class="input-group">
+            <label for="pieceQuantity">Anzahl der Stücke</label>
+            <input type="number" id="pieceQuantity" step="1" onkeydown="nextField(event, 'pieceLength')">
+        </div>
+        <div class="input-group">
+            <label for="pieceLength">Stücklänge (mm)</label>
+            <input type="number" id="pieceLength" step="0.1" onkeydown="nextField(event, 'cuttingTool')">
+        </div>
+        <div class="input-group">
+            <label for="cuttingTool">Breite des Schneidwerkzeugs (mm)</label>
+            <input type="number" id="cuttingTool" step="0.1" onkeydown="nextField(event, 'calculateButton')">
+        </div>
+        <div class="buttons">
+            <button id="calculateButton" class="calculate-button"
+            onclick="calculateRequirement()">Berechnen</button>
+            <button class="copy-button" onclick="copyTemplate()">Kopieren</button>
+            <button class="share-button" onclick="shareResults()">Teilen</button>
+            <button class="reset-button" onclick="resetFields()">Zurücksetzen</button>
+            <button class="history-button" onclick="toggleHistory()">Verlauf</button>
+            <button class="add-material-button" onclick="openModal()">Material hinzufügen</button>
+        </div>
+        <div class="result" id="result"></div>
+        <div class="history" id="history"></div>
+    </div>
+
+    <!-- Modal for Adding Material -->
+    <div id="materialModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Material hinzufügen</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="input-group">
+                <label for="newMaterial">Material</label>
+                <input type="text" id="newMaterial">
+            </div>
+            <div class="input-group">
+                <label for="newSubMaterial">Untermaterial</label>
+                <input type="text" id="newSubMaterial">
+            </div>
+            <div class="input-group">
+                <label for="newDensity">Dichte (kg/m³)</label>
+                <input type="number" id="newDensity" step="0.1">
+            </div>
+            <div class="modal-footer">
+                <button class="add-material-button" onclick="addMaterial()">Hinzufügen</button>
+                <button class="reset-button" onclick="closeModal()">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const materials = {
+            iron: { density: 7850, subMaterials: ["Grauguss", "Sphäroguss"] },
+            brass: { density: 8500, subMaterials: ["C36000", "C38500"] },
+            aluminium: { density: 2700, subMaterials: ["6061", "7075", "2024"] },
+            stainless_steel: { density: 8000, subMaterials: ["1.4305", "1.4301", "1.4404"] },
+            steel: { density: 7850, subMaterials: ["Baustahl", "Werkzeugstahl", "1045 Carbon Steel"] },
+            plastic: { density: 1200, subMaterials: ["POM", "Tecaform", "ABS", "Nylon", "PEEK"] }
+        };
+
+        let history = [];
+
+        function updateSubMaterial() {
+            const material = document.getElementById('material').value;
+            const subMaterialSelect = document.getElementById('subMaterial');
+            subMaterialSelect.innerHTML = '';
+            materials[material].subMaterials.forEach(subMat => {
+                const option = document.createElement('option');
+                option.value = subMat;
+                option.textContent = subMat;
+                subMaterialSelect.appendChild(option);
+            });
+            document.getElementById('density').value = materials[material].density;
+        }
+
+        function calculateRequirement() {
+            const purchaseLength = parseFloat(document.getElementById('length').value) / 1000; // Convert to meters
+            const usableLength = parseFloat(document.getElementById('usableLength').value) / 1000; // Convert to meters
+            const dimension = parseFloat(document.getElementById('dimension').value) / 1000; // Convert to meters
+            const shape = document.getElementById('shape').value;
+            const material = document.getElementById('material').value;
+            const subMaterial = document.getElementById('subMaterial').value;
+            const density = parseFloat(document.getElementById('density').value);
+            const pieceQuantity = parseInt(document.getElementById('pieceQuantity').value);
+            const pieceLength = parseFloat(document.getElementById('pieceLength').value) / 1000; // Convert to meters
+            const cuttingTool = parseFloat(document.getElementById('cuttingTool').value) / 1000; // Convert to meters
+
+            if (isNaN(purchaseLength) || isNaN(usableLength) || isNaN(dimension) || isNaN(pieceQuantity) || isNaN(pieceLength) || isNaN(cuttingTool) || isNaN(density)) {
+                alert('Bitte geben Sie gültige Zahlen für alle Eingaben ein.');
+                return;
+            }
+
+            let volume;
+
+            // Calculate volume based on shape
+            switch (shape) {
+                case 'round':
+                    volume = Math.PI * Math.pow(dimension / 2, 2) * purchaseLength;
+                    break;
+                case 'square':
+                    volume = Math.pow(dimension, 2) * purchaseLength;
+                    break;
+                case 'hexagon':
+                    volume = ((3 * Math.sqrt(3)) / 2) * Math.pow(dimension, 2) * purchaseLength;
+                    break;
+                default:
+                    volume = 0;
+                    break;
+            }
+
+            // Calculate total piece length required including cutting tool loss
+            const totalPieceLength = pieceQuantity * pieceLength;
+            const totalCuttingLoss = (pieceQuantity - 1) * cuttingTool;
+            const totalRequiredLength = totalPieceLength + totalCuttingLoss;
+
+            // Calculate the number of usable bars required
+            const numBars = Math.ceil(totalRequiredLength / usableLength);
+
+            // Calculate the total weight
+            const totalWeight = numBars * volume * density * (usableLength / purchaseLength);
+
+            // Calculate total pieces from purchase bars
+            const totalPiecesFromPurchase = Math.floor(purchaseLength / (pieceLength + cuttingTool)) * numBars;
+
+            const resultHtml = `
+                <p class="big">${totalPiecesFromPurchase} Stücke</p>
+                <p class="medium">${numBars} Stangen</p>
+                <p class="big">${totalWeight.toFixed(2)} kg</p>
+                <p class="small">Dichte: ${density} kg/m<sup>3</sup></p>
+            `;
+
+            document.getElementById('result').innerHTML = resultHtml;
+
+            // Save calculation to history
+            const calculation = {
+                totalPiecesFromPurchase,
+                numBars,
+                totalWeight: totalWeight.toFixed(2),
+                density,
+                shape,
+                material,
+                subMaterial,
+                dimension: document.getElementById('dimension').value,
+                pieceQuantity,
+                pieceLength: document.getElementById('pieceLength').value,
+                cuttingTool: document.getElementById('cuttingTool').value,
+                totalRequiredLength: (totalRequiredLength * 1000).toFixed(2) // Convert back to mm
+            };
+
+            history.unshift(calculation);
+            if (history.length > 5) {
+                history.pop();
+            }
+
+            updateHistory();
+        }
+
+        function copyTemplate() {
+            if (!history.length) {
+                alert('Keine Berechnung zum Kopieren.');
+                return;
+            }
+
+            const selectedCalculations = history.filter((calc, index) => document.getElementById(`history-item-${index}`).checked);
+
+            if (selectedCalculations.length === 0) {
+                alert('Keine Berechnungen ausgewählt.');
+                return;
+            }
+
+            let template = '';
+            selectedCalculations.forEach((calc, index) => {
+                template += `
+Position: ${index + 1}
+Material: ${calc.material} (${calc.subMaterial})
+Form: ${calc.shape}
+Durchmesser/Seitenlänge: ${calc.dimension} mm
+Anzahl der Stangen: ${calc.numBars}
+Gesamtgewicht: ${calc.totalWeight} kg
+Dichte: ${calc.density} kg/m³
+
+`;
+            });
+
+            navigator.clipboard.writeText(template).then(() => {
+                alert('Vorlage in die Zwischenablage kopiert.');
+            }).catch(() => {
+                alert('Fehler beim Kopieren der Vorlage.');
+            });
+        }
+
+        function resetFields() {
+            document.getElementById('length').value = 3000;
+            document.getElementById('usableLength').value = 2800;
+            document.getElementById('dimension').value = '';
+            document.getElementById('shape').value = 'round';
+            document.getElementById('material').value = 'iron';
+            updateSubMaterial();
+            document.getElementById('pieceQuantity').value = '';
+            document.getElementById('pieceLength').value = '';
+            document.getElementById('cuttingTool').value = '';
+            document.getElementById('result').innerHTML = '';
+        }
+
+        function toggleHistory() {
+            const historyDiv = document.getElementById('history');
+            historyDiv.style.display = historyDiv.style.display === 'none' ? 'block' : 'none';
+            updateHistory();
+        }
+
+        function updateHistory() {
+            const historyDiv = document.getElementById('history');
+            historyDiv.innerHTML = '';
+
+            history.forEach((calc, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = `
+                    <input type="checkbox" id="history-item-${index}">
+                    <div>
+                        <p><strong>Berechnung ${index + 1}</strong></p>
+                        <p>Form: ${calc.shape}</p>
+                        <p>Material: ${calc.material} (${calc.subMaterial})</p>
+                                                <p>Durchmesser/Seitenlänge: ${calc.dimension} mm</p>
+                        <p>Anzahl der Stangen: ${calc.numBars}</p>
+                        <p>Gesamtgewicht: ${calc.totalWeight} kg</p>
+                        <p class="small">Dichte: ${calc.density} kg/m³</p>
+                    </div>
+                `;
+                historyDiv.appendChild(historyItem);
+            });
+        }
+
+        function nextField(event, nextId) {
+            if (event.key === 'Enter') {
+                document.getElementById(nextId).focus();
+                if (nextId === 'calculateButton') {
+                    calculateRequirement();
+                }
+            }
+        }
+
+        function openModal() {
+            document.getElementById('materialModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('materialModal').style.display = 'none';
+        }
+
+        function addMaterial() {
+            const newMaterial = document.getElementById('newMaterial').value;
+            const newSubMaterial = document.getElementById('newSubMaterial').value;
+            const newDensity = parseFloat(document.getElementById('newDensity').value);
+
+            if (!newMaterial || !newSubMaterial || isNaN(newDensity)) {
+                alert('Bitte geben Sie gültige Werte für das neue Material ein.');
+                return;
+            }
+
+            if (!materials[newMaterial]) {
+                materials[newMaterial] = { density: newDensity, subMaterials: [newSubMaterial] };
+            } else {
+                materials[newMaterial].subMaterials.push(newSubMaterial);
+            }
+
+            closeModal();
+            updateMaterialOptions();
+        }
+
+        function updateMaterialOptions() {
+            const materialSelect = document.getElementById('material');
+            materialSelect.innerHTML = '';
+            Object.keys(materials).forEach(mat => {
+                const option = document.createElement('option');
+                option.value = mat;
+                option.textContent = mat;
+                materialSelect.appendChild(option);
+            });
+            updateSubMaterial();
+        }
+
+        function shareResults() {
+            if (!history.length) {
+                alert('Keine Berechnung zum Teilen.');
+                return;
+            }
+
+            const selectedCalculations = history.filter((calc, index) => document.getElementById(`history-item-${index}`).checked);
+
+            if (selectedCalculations.length === 0) {
+                alert('Keine Berechnungen ausgewählt.');
+                return;
+            }
+
+            let results = '';
+            selectedCalculations.forEach((calc, index) => {
+                results += `
+Position: ${index + 1}
+Material: ${calc.material} (${calc.subMaterial})
+Form: ${calc.shape}
+Durchmesser/Seitenlänge: ${calc.dimension} mm
+Anzahl der Stangen: ${calc.numBars}
+Gesamtgewicht: ${calc.totalWeight} kg
+Dichte: ${calc.density} kg/m³
+`;
+            });
+
+            const shareData = {
+                title: 'Berechnungsergebnisse',
+                text: results,
+            };
+
+            if (navigator.share) {
+                navigator.share(shareData)
+                    .then(() => console.log('Erfolgreich geteilt.'))
+                    .catch((error) => console.log('Fehler beim Teilen:', error));
+            } else {
+                alert('Teilen wird auf diesem Gerät nicht unterstützt.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateMaterialOptions();
+            document.getElementById('material').addEventListener('change', updateSubMaterial);
+        });
+    </script>
+</body>
+</html>
+
